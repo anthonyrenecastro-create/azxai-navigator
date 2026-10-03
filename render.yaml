@@ -1,0 +1,39 @@
+# AZxAI Navigator — Render Blueprint.
+# Verification phase runs on the free plan (ephemeral disk: SQLite state resets on restart).
+# Before selling: switch to plan: starter and add the persistent disk below, then set
+# DATABASE_PATH=/var/data/navigator.db.
+#   disk:
+#     name: navigator-data
+#     mountPath: /var/data
+#     sizeGB: 1
+services:
+  - type: web
+    name: azxai-navigator
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/auth/me
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Public base URL of this service; production config fails closed without it.
+      - key: APP_URL
+        sync: false
+      - key: BILLING_WEBHOOK_SECRET
+        generateValue: true
+      - key: DATABASE_PATH
+        value: data/navigator.db
+      - key: TRUST_PROXY
+        value: "true"
+      - key: ENABLE_LAB
+        value: "false"
+      - key: ALLOW_PUBLIC_DEMO
+        value: "false"
+      - key: SEED_DEMO
+        value: "false"
+      - key: STRIPE_PAYMENT_LINK_NAVIGATOR
+        value: https://buy.stripe.com/14A7sNcsM1gzf6SfBv18c0d
+      # Set from the Stripe webhook endpoint (dashboard copy, never in git).
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

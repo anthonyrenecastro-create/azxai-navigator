@@ -1,4 +1,13 @@
-# AZxAI Navigator — Integration Map with aichangeradar.com
+# AZxAI Navigator — Integration Map
+
+## Live Stripe objects (created 2026-10-03, Axiom Zeta Innovations, livemode)
+
+- Product: `prod_VNKIz0AJgpvVyB` (AZxAI Navigator)
+- Price: `price_1UMZdVRuE1b4AX4Ji11xH0AM` — $74.99 USD / month, recurring
+- Payment Link: `plink_1UMZdjRuE1b4AX4J9v7ftjmV` — https://buy.stripe.com/14A7sNcsM1gzf6SfBv18c0d
+  - Link metadata and `subscription_data.metadata` both carry `product=navigator`, as the webhook bridge expects.
+  - Buyers must arrive with `?client_reference_id=<tenantId>` appended (the app does this) so grants attribute to the right tenant.
+- Still to create: webhook endpoint (after hosting) for `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted` → `POST /api/billing/stripe/webhook`. with aichangeradar.com
 
 **Date:** 2026-10-03 · **Status:** proposal for Zebulon's decisions (no repo created, nothing pushed)
 **Navigator:** standalone project at `~/workspace/projects/azxai-navigator` (extracted from `A.I.-Change-Radar` nested `thoth-a.i.-time-oracle-main/`, head `4a09888b`)

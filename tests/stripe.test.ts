@@ -59,3 +59,25 @@ test('stripe bridge: unconfigured secret returns 503', async () => {
     await t.close();
   }
 });
+
+test('billing: /auth/me exposes the configured Navigator checkout link (null when unset)', async () => {
+  const t = await startTestApp({ stripePaymentLinkNavigator: 'https://buy.stripe.com/test_link' });
+  try {
+    const c = t.client();
+    await registerTenant(c, 'checkout-link@example.com');
+    const me = await c.get('/auth/me');
+    assert.equal(me.status, 200);
+    assert.equal(me.body.billing.navigatorCheckoutUrl, 'https://buy.stripe.com/test_link');
+  } finally {
+    await t.close();
+  }
+  const plain = await startTestApp();
+  try {
+    const c = plain.client();
+    await registerTenant(c, 'no-link@example.com');
+    const me = await c.get('/auth/me');
+    assert.equal(me.body.billing.navigatorCheckoutUrl, null);
+  } finally {
+    await plain.close();
+  }
+});
