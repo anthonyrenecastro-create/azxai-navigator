@@ -28,6 +28,32 @@ const eventSchema = z.object({
   product: z.string().min(1).max(100),
 });
 
+export type BillingOutcome = 'duplicate' | 'applied' | 'ignored_unknown_tenant' | 'ignored_demo_tenant';
+
+/**
+ * Single entitlement mutation path, shared by the internal billing webhook and the Stripe bridge.
+ * Idempotent by event id: a redelivery returns 'duplicate' and changes nothing.
+ */
+export function applyBillingGrant(deps: Deps, event: { id: string; tenantId: string; product: string; granted: boolean; payload: string }): BillingOutcome {
+  const grant = BILLING_PRODUCTS[event.product];
+  if (!grant) throw new HttpError(422, 'Unknown product', 'unknown_product');
+  const { db } = deps;
+  if (db.prepare('SELECT 1 FROM billing_events WHERE id = ?').get(event.id)) return 'duplicate';
+  const tenant = db.prepare('SELECT id, is_demo FROM tenants WHERE id = ?').get(event.tenantId) as { id: string; is_demo: number } | undefined;
+  let outcome: BillingOutcome = 'applied';
+  db.transaction(() => {
+    if (!tenant) outcome = 'ignored_unknown_tenant';
+    else if (tenant.is_demo) outcome = 'ignored_demo_tenant';
+    else {
+      if (grant.monitoring) db.prepare('UPDATE entitlements SET monitoring_plan = ?, updated_at = ? WHERE tenant_id = ?').run(event.granted ? grant.monitoring : 'none', nowIso(), tenant.id);
+      if (grant.navigator) db.prepare('UPDATE entitlements SET navigator_plan = ?, updated_at = ? WHERE tenant_id = ?').run(event.granted ? grant.navigator : 'evaluation', nowIso(), tenant.id);
+      if (grant.radarLinked) db.prepare('UPDATE entitlements SET radar_linked = ?, updated_at = ? WHERE tenant_id = ?').run(event.granted ? 1 : 0, nowIso(), tenant.id);
+    }
+    db.prepare('INSERT INTO billing_events (id, type, tenant_id, payload, received_at, outcome) VALUES (?,?,?,?,?,?)').run(event.id, event.granted ? 'entitlement.granted' : 'entitlement.revoked', event.tenantId, event.payload, nowIso(), outcome);
+  })();
+  return outcome;
+}
+
 /**
  * Entitlements change only through signed billing events. There is deliberately no customer-facing upgrade endpoint.
  * An unsigned or badly signed request is rejected with 400 and no detail about why.
@@ -40,23 +66,8 @@ export function billingRouter(deps: Deps): Router {
     if (!verifyBillingSignature(deps.config.billingWebhookSecret, body, req.header('x-billing-signature'))) throw new HttpError(400, 'Invalid signature', 'invalid_signature');
     let event: z.infer<typeof eventSchema>;
     try { event = eventSchema.parse(JSON.parse(body.toString('utf8'))); } catch { throw new HttpError(400, 'Invalid event', 'invalid_event'); }
-    const grant = BILLING_PRODUCTS[event.product];
-    if (!grant) throw new HttpError(422, 'Unknown product', 'unknown_product');
-    const { db } = deps;
-    if (db.prepare('SELECT 1 FROM billing_events WHERE id = ?').get(event.id)) return res.json({ ok: true, duplicate: true });
-    const tenant = db.prepare('SELECT id, is_demo FROM tenants WHERE id = ?').get(event.tenantId) as { id: string; is_demo: number } | undefined;
-    let outcome = 'applied';
-    db.transaction(() => {
-      if (!tenant) outcome = 'ignored_unknown_tenant';
-      else if (tenant.is_demo) outcome = 'ignored_demo_tenant';
-      else {
-        const granted = event.type === 'entitlement.granted';
-        if (grant.monitoring) db.prepare('UPDATE entitlements SET monitoring_plan = ?, updated_at = ? WHERE tenant_id = ?').run(granted ? grant.monitoring : 'none', nowIso(), tenant.id);
-        if (grant.navigator) db.prepare('UPDATE entitlements SET navigator_plan = ?, updated_at = ? WHERE tenant_id = ?').run(granted ? grant.navigator : 'evaluation', nowIso(), tenant.id);
-        if (grant.radarLinked) db.prepare('UPDATE entitlements SET radar_linked = ?, updated_at = ? WHERE tenant_id = ?').run(granted ? 1 : 0, nowIso(), tenant.id);
-      }
-      db.prepare('INSERT INTO billing_events (id, type, tenant_id, payload, received_at, outcome) VALUES (?,?,?,?,?,?)').run(event.id, event.type, event.tenantId, body.toString('utf8'), nowIso(), outcome);
-    })();
+    const outcome = applyBillingGrant(deps, { id: event.id, tenantId: event.tenantId, product: event.product, granted: event.type === 'entitlement.granted', payload: body.toString('utf8') });
+    if (outcome === 'duplicate') return res.json({ ok: true, duplicate: true });
     res.json({ ok: true, outcome });
   });
   return r;
