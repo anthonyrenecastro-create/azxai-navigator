@@ -31,21 +31,9 @@ export const NAVIGATOR_PLANS: Record<NavigatorPlanId, NavigatorPlan> = {
   navigator: { id: 'navigator', name: 'AZxAI Navigator', workflowLimit: null, canWrite: true, includesFeedAccess: false },
 };
 
-/** Plan assigned to new self-registered tenants. Never a paid plan. */
-export const SIGNUP_DEFAULTS = { monitoring: 'none' as MonitoringPlanId, navigator: 'evaluation' as NavigatorPlanId, radarLinked: false };
+/** Plan assigned to new self-registered tenants. No paywall: every tenant gets full Navigator access. */
+export const SIGNUP_DEFAULTS = { monitoring: 'none' as MonitoringPlanId, navigator: 'navigator' as NavigatorPlanId, radarLinked: false };
 
-/**
- * Billing product codes that verified billing events may grant.
- * The bundle grants Navigator plus linked read access to the Radar feed, with no second monitoring charge.
- */
-export interface Grant { monitoring?: MonitoringPlanId; navigator?: NavigatorPlanId; radarLinked?: boolean }
-export const BILLING_PRODUCTS: Record<string, Grant> = {
-  radar_5: { monitoring: 'radar_5' },
-  radar_15: { monitoring: 'radar_15' },
-  radar_unlimited: { monitoring: 'radar_unlimited' },
-  navigator: { navigator: 'navigator' },
-  navigator_radar_linked: { navigator: 'navigator', radarLinked: true },
-};
 
 export interface Entitlements { monitoringPlan: MonitoringPlanId; navigatorPlan: NavigatorPlanId; radarLinked: boolean }
 

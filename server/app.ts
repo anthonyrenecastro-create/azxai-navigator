@@ -3,8 +3,6 @@ import { ZodError } from 'zod';
 import type { AppConfig } from './config';
 import type { Db } from './db';
 import { authRouter, mutationGuard, requireSession, sessionMiddleware, teamRouter } from './auth';
-import { billingRouter } from './billing';
-import { stripeRouter } from './stripe';
 import { HttpError, type Deps } from './http';
 import { LocalPipelineAdapter, type ChangeFeedAdapter } from './radar';
 import { decisionRouter } from './routes/decisions';
@@ -27,9 +25,6 @@ export function createApp(db: Db, config: AppConfig, feed: ChangeFeedAdapter = n
     next();
   });
 
-  // The webhook needs the raw body for signature verification, so it is mounted before the JSON parser.
-  app.use('/api/billing', billingRouter(deps));
-  app.use('/api/billing', stripeRouter(deps));
   app.use(express.json({ limit: '1mb' }));
   app.use(sessionMiddleware(deps));
   app.use('/api', mutationGuard);

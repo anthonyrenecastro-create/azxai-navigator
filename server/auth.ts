@@ -75,7 +75,6 @@ export function authRouter(deps: Deps): Router {
     user: { id: c.userId, email: c.email, role: c.role },
     tenant: { id: c.tenantId, isDemo: c.isDemo, name: (db.prepare('SELECT name FROM tenants WHERE id = ?').get(c.tenantId) as { name: string }).name },
     entitlements: entitlementSummary(c.entitlements),
-    billing: { navigatorCheckoutUrl: config.stripePaymentLinkNavigator || null },
     publicDemoEnabled: config.allowPublicDemo,
   });
 

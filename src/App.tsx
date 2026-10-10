@@ -10,7 +10,7 @@ import { Badge, Btn, errText, ErrorBox, Field, inputCls, Loading, navigate, useR
 
 const LabApp = lazy(() => import('./LabApp'));
 
-interface Me { user: { id: string; email: string; role: string }; tenant: { id: string; name: string; isDemo: boolean }; entitlements: any; billing?: { navigatorCheckoutUrl: string | null } }
+interface Me { user: { id: string; email: string; role: string }; tenant: { id: string; name: string; isDemo: boolean }; entitlements: any; }
 
 const NAV = [['operations', 'My AI Operations', GitBranch], ['exposure', 'Exposure', ShieldAlert], ['sandbox', 'Decision Sandbox', Scale], ['actions', 'Action Workspace', ListChecks], ['history', 'Decision History', HistoryIcon]] as const;
 
@@ -89,16 +89,6 @@ export default function App() {
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <Badge tone="violet">{ent.navigator.name}</Badge>
           <Badge tone={ent.canReadChangeFeed ? 'green' : 'amber'}>{ent.radarLinked ? 'Radar linked' : ent.monitoringPlan !== 'none' ? ent.monitoring.name : ent.canReadChangeFeed ? 'Feed: evaluation' : 'No change feed'}</Badge>
-          {me.billing?.navigatorCheckoutUrl && ent.navigatorPlan !== 'navigator' && !me.tenant.isDemo && (
-            <a
-              href={`${me.billing.navigatorCheckoutUrl}?client_reference_id=${me.tenant.id}`}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium bg-sky-600 text-white hover:bg-sky-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
-            >
-              Upgrade to Navigator
-            </a>
-          )}
           <span className="hidden sm:inline font-mono text-slate-400 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">{me.user.email} ({role})</span>
           {labOn && <a className="text-slate-400 hover:text-sky-400 inline-flex items-center gap-1" href="#/lab"><FlaskConical className="w-3.5 h-3.5" aria-hidden />Lab</a>}
           <Btn onClick={logout}>Sign out</Btn>

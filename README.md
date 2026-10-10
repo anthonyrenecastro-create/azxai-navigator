@@ -20,7 +20,7 @@ Journey: **Map my AI operations → see affected workflows → compare options �
 Weekly Briefs remain as supporting context, linking each item to affected workflows.
 
 ## Repository note
-This archive did not contain a Radar web app, SQLite store, auth, or billing code (only the pure pipeline in `src/engine/changeRadar.ts`). Navigator's accounts, roles, billing and throttling were therefore built here from scratch rather than patched. The earlier Thoth/HRM workbench is preserved as an optional dev-only lab ([docs/legacy-thoth-lab.md](docs/legacy-thoth-lab.md), `#/lab`).
+This archive did not contain a Radar web app, SQLite store, auth, or billing code (only the pure pipeline in `src/engine/changeRadar.ts`). Navigator's accounts, roles, and throttling were therefore built here from scratch rather than patched. The earlier Thoth/HRM workbench is preserved as an optional dev-only lab ([docs/legacy-thoth-lab.md](docs/legacy-thoth-lab.md), `#/lab`).
 
 ## Setup
 ```bash
@@ -33,14 +33,14 @@ Scripts: `npm run lint` (tsc), `npm test`, `npm run build`, `npm start` (product
 Stack: React 19 + Vite, Express 5, TypeScript, SQLite (`better-sqlite3`), zod. Migrations run on start ([server/migrations.ts](server/migrations.ts)). Pure logic shared by server and client lives in [shared/](shared).
 
 ### Production
-`NODE_ENV=production` requires `APP_URL` and `BILLING_WEBHOOK_SECRET` (≥ 24 chars) and refuses `ENABLE_LAB`. Public demo and demo seeding are off by default; if the demo is enabled it is a read-only viewer. Set `TRUST_PROXY=true` behind a proxy. Back up the SQLite file (`DATABASE_PATH`); to wipe a dev database delete the file (scenario revisions are immutable by trigger).
+`NODE_ENV=production` requires `APP_URL` and refuses `ENABLE_LAB`. Public demo and demo seeding are off by default; if the demo is enabled it is a read-only viewer. Set `TRUST_PROXY=true` behind a proxy. Back up the SQLite file (`DATABASE_PATH`); to wipe a dev database delete the file (scenario revisions are immutable by trigger).
 
 ## Security model
 - Passwords: scrypt with per-user salt, min 12 chars. Legacy unsalted SHA-256 hashes are accepted once and re-hashed on login; admin reset via `admin:reset-password`.
 - Roles are server-controlled (`viewer < editor < admin < owner`). Registration creates a new tenant whose creator is owner; roles are never derived from email text. Only owners add members.
 - Login/registration throttling per email and IP; session cookies are httpOnly, SameSite=Lax, secure in production; JSON-only mutations with origin check.
 - Every customer record carries `tenant_id`; each query filters by it, relationship IDs are ownership-checked (404 across tenants) and composite foreign keys enforce it in SQLite.
-- Paid access is granted **only** by verified billing webhooks (`POST /api/billing/webhook`, header `x-billing-signature: t=<unix>,v1=<hex HMAC-SHA256 of "t.rawBody">`, 5-minute tolerance, idempotent by event id). There is no customer upgrade endpoint. Invalid signatures get 400; a missing secret gets 503.
+- There is no paywall: every tenant receives full Navigator access (`navigator` plan). No billing webhooks, no checkout.
 - Demo data is flagged (`is_demo`), isolated per tenant and in the change feed, and never visible to real tenants.
 
 ## Commercial configuration
