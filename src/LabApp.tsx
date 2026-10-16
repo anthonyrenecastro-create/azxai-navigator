@@ -11,7 +11,6 @@ import { LedgerView } from './components/LedgerView';
 import { ReplayControls } from './components/ReplayControls';
 import { ResourceMonitor } from './components/ResourceMonitor';
 import { PerturbationPanel } from './components/PerturbationPanel';
-import { PythonCodeExporter } from './components/PythonCodeExporter';
 import { GeminiTriPathConsole } from './components/GeminiTriPathConsole';
 import { SimulationScenario } from './engine/environment';
 import { SubstrateHealthAndReputation } from './components/SubstrateHealthAndReputation';
@@ -21,7 +20,6 @@ import {
   Cpu,
   Activity,
   FileText,
-  Terminal,
   ShieldCheck,
   Zap,
   Sparkles,
@@ -45,7 +43,7 @@ export default function LabApp() {
   const [ledger, setLedger] = useState(runtime.getLedger());
   const [isRunning, setIsRunning] = useState(runtime.getIsRunning());
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'gemini' | 'ecosystem' | 'topology' | 'health' | 'memory' | 'proposals' | 'ledger' | 'python'>('ecosystem');
+  const [activeTab, setActiveTab] = useState<'gemini' | 'ecosystem' | 'topology' | 'health' | 'memory' | 'proposals' | 'ledger'>('ecosystem');
   const [selectedStepForLedger, setSelectedStepForLedger] = useState(0);
 
   useEffect(() => {
@@ -219,17 +217,6 @@ export default function LabApp() {
           >
             <FileText className="w-4 h-4" /> Explanation Ledger
           </button>
-
-          <button
-            onClick={() => setActiveTab('python')}
-            className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-2 ${
-              activeTab === 'python'
-                ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20 font-semibold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-            }`}
-          >
-            <Terminal className="w-4 h-4" /> Python 3.12+ Source Code
-          </button>
         </div>
 
         {/* Tab 0: Gemini Tri-Path Orchestrator */}
@@ -398,13 +385,6 @@ export default function LabApp() {
                 runtime.replayToStep(step);
               }}
             />
-          </div>
-        )}
-
-        {/* Tab 4: Python Code Exporter */}
-        {activeTab === 'python' && (
-          <div className="space-y-4">
-            <PythonCodeExporter />
           </div>
         )}
       </main>
